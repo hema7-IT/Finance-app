@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Add Loan</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+/* Reset & font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top left, #1e293b, #0f172a 60%);
+  color: white;
+  overflow-x: hidden;
+  padding: 0;
+  position: relative;
+}
+
+/* Full screen container */
+.container {
+  width: 95%;
+  max-width: 480px;       /* app-style width */
+  min-height: 90vh;       /* almost full mobile screen */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(1rem);
+  border-radius: 1rem;
+  padding: 5% 5%;
+  box-shadow: 0 1rem 2rem rgba(0,0,0,0.6);
+}
+
+/* Heading */
+h2 {
+  color: #d4af37;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+/* Input fields */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+/* Button */
+button {
+  width: 100%;
+  padding: 14px;
+  background: #22c55e;
+  border: none;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.03);
+}
+
+/* Preview box */
+.preview {
+  background: rgba(15,23,42,0.8);
+  padding: 12px;
+  border-radius: 0.5rem;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+/* Back link */
+.back {
+  display: block;
+  text-align: center;
+  margin-top: 15px;
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+/* Mobile responsive tweaks */
+@media(max-width:400px){
+  .container{
+    width: 98%;
+    padding: 4% 4%;
+    min-height: 85vh;
+    border-radius: 0.8rem;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+
+  input, button {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .preview {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  .back {
+    font-size: 0.85rem;
+  }
+}
+</style>
+
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Create New Loan</h2>
+
+  <input type="text" id="name" placeholder="Customer Name">
+  <input type="text" id="phone" placeholder="Phone Number">
+  <input type="number" id="amount" placeholder="Loan Amount" oninput="calculate()">
+  <input type="number" id="interestPercent" placeholder="Interest (%)" oninput="calculate()">
+  <input type="number" id="days" placeholder="Total Days">
+
+  <div class="preview" id="previewBox">
+    Interest Amount: ₹0 <br>
+    Total Payable: ₹0
+  </div>
+
+  <button onclick="addCustomer()">Create Loan</button>
+
+  <a href="dashboard.html" class="back">← Back to Dashboard</a>
+</div>
+
+<script>
+function calculate(){
+  let amount = parseFloat(document.getElementById("amount").value) || 0;
+  let percent = parseFloat(document.getElementById("interestPercent").value) || 0;
+
+  let interestAmount = (amount * percent) / 100;
+  let totalPayable = amount + interestAmount;
+
+  document.getElementById("previewBox").innerHTML = `
+    Interest Amount: ₹${interestAmount.toFixed(2)} <br>
+    Total Payable: ₹${totalPayable.toFixed(2)}
+  `;
+}
+
+function addCustomer(){
+  let name = document.getElementById("name").value.trim();
+  let phone = document.getElementById("phone").value.trim();
+  let amount = parseFloat(document.getElementById("amount").value);
+  let percent = parseFloat(document.getElementById("interestPercent").value);
+  let days = parseInt(document.getElementById("days").value);
+
+  if(!name || !phone || !amount || !percent || !days){
+    alert("Please fill all fields");
+    return;
+  }
+
+  let interestAmount = (amount * percent) / 100;
+  let totalPayable = amount + interestAmount;
+
+  let today = new Date();
+  let formattedDate = today.toLocaleDateString('en-GB');
+  let timestamp = today.getTime();
+
+  let customers = JSON.parse(localStorage.getItem("customers")) || [];
+
+  customers.push({
+    name: name,
+    phone: phone,
+    loanAmount: amount,
+    interestPercent: percent,
+    interestAmount: interestAmount,
+    totalPayable: totalPayable,
+    totalDays: days,
+    startDate: formattedDate,
+    createdTimestamp: timestamp,
+    payments: []
+  });
+
+  localStorage.setItem("customers", JSON.stringify(customers));
+
+  alert("Loan Created Successfully!");
+  window.location.href = "dashboard.html";
+}
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>

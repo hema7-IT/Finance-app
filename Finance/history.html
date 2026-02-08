@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta charset="UTF-8">
+<title>Customer History</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/* Reset & font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at top left, #1e293b, #0f172a 60%);
+  color: white;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header */
+header {
+  width: 95%;
+  max-width: 480px;
+  background: rgba(212,175,55,0.15);
+  backdrop-filter: blur(1rem);
+  color: #d4af37;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.2rem;
+  border-radius: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 1rem 2rem rgba(0,0,0,0.5);
+}
+
+/* Container */
+.container {
+  width: 95%;
+  max-width: 480px;
+  padding-bottom: 2rem;
+}
+
+/* Search Box */
+input#searchBox {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  border: none;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+/* Customer card */
+.customer-card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(1rem);
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1rem 2rem rgba(0,0,0,0.5);
+}
+
+.customer-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.6);
+}
+
+/* Status borders */
+.completed {
+  border: 2px solid #22c55e;
+}
+
+.overdue {
+  border: 2px solid #ef4444;
+}
+
+/* Badges */
+.badge {
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-complete {
+  background: #22c55e;
+  color: white;
+}
+
+.badge-overdue {
+  background: #ef4444;
+  color: white;
+}
+
+/* Buttons */
+button {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: linear-gradient(145deg,#f5d97b,#d4af37);
+  color: black;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* Payment history box */
+.payment-history {
+  margin-top: 0.8rem;
+  background: rgba(255,255,255,0.05);
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+/* Back button */
+.back-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(145deg,#f5d97b,#d4af37);
+  color: black;
+  text-decoration: none;
+  border-radius: 0.8rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.back-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Headings inside card */
+.customer-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #d4af37;
+  margin-bottom: 0.3rem;
+}
+
+/* Paragraphs inside card */
+.customer-card p {
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+  color: #ccc;
+}
+
+/* Mobile responsiveness */
+@media(max-width:400px){
+  header {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+
+  input#searchBox {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .customer-card {
+    padding: 0.8rem;
+    border-radius: 0.8rem;
+  }
+
+  .customer-card h3 {
+    font-size: 1rem;
+  }
+
+  .customer-card p, .payment-history {
+    font-size: 0.75rem;
+  }
+
+  button, .back-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.7rem;
+  }
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+</head>
+
+<body>
+
+<header>Customer Payment History</header>
+
+<div class="container">
+
+<input type="text" id="searchBox" placeholder="Search by customer name..." oninput="renderCustomers()">
+
+<div id="customerList"></div>
+
+<a href="index.html" class="back-btn">← Back</a>
+
+</div>
+
+<script>
+
+let customers = JSON.parse(localStorage.getItem("customers")) || [];
+
+function renderCustomers(){
+
+  let container = document.getElementById("customerList");
+  container.innerHTML = "";
+
+  let search = document.getElementById("searchBox").value.toLowerCase();
+
+  let filtered = customers.filter(c => 
+    c.name.toLowerCase().includes(search)
+  );
+
+  if(filtered.length === 0){
+    container.innerHTML = "<p>No Customers Found</p>";
+    return;
+  }
+
+  filtered.forEach((customer,index) => {
+
+    let today = new Date().getTime();
+    let daysPassed = Math.floor((today - customer.createdTimestamp) / (1000*60*60*24));
+    let daysLeft = customer.totalDays - daysPassed;
+    if(daysLeft < 0) daysLeft = 0;
+
+    let maturityDate = new Date(customer.createdTimestamp + customer.totalDays*24*60*60*1000)
+      .toLocaleDateString('en-GB');
+
+    let totalPaid = 0;
+    if(customer.payments){
+      customer.payments.forEach(p => totalPaid += p.amount);
+    }
+
+    let balance = customer.totalPayable - totalPaid;
+
+    let div = document.createElement("div");
+    div.className = "customer-card";
+
+    if(balance <= 0){
+      div.classList.add("completed");
+    }
+    else if(daysLeft === 0){
+      div.classList.add("overdue");
+    }
+
+    div.innerHTML = `
+      <h3>${customer.name}</h3>
+      <p>Phone: ${customer.phone}</p>
+
+      ${
+        balance <= 0 
+        ? `<span class="badge badge-complete">Loan Completed</span>`
+        : daysLeft === 0 
+          ? `<span class="badge badge-overdue">Overdue</span>`
+          : ""
+      }
+
+      <p>Start Date: ${customer.startDate}</p>
+      <p>Maturity Date: ${maturityDate}</p>
+      <p>Loan Amount: ₹${customer.loanAmount}</p>
+      <p>Interest (${customer.interestPercent}%): ₹${customer.interestAmount.toFixed(2)}</p>
+      <p>Total Payable: ₹${customer.totalPayable.toFixed(2)}</p>
+      <p>Total Paid: ₹${totalPaid.toFixed(2)}</p>
+      <p><strong>Balance: ₹${balance.toFixed(2)}</strong></p>
+      <p>Days Left: ${daysLeft}</p>
+
+      <button onclick="addPayment(${index})">Add Payment</button>
+      <button onclick="downloadPDF(${index})">Download PDF</button>
+
+      <div class="payment-history">
+        <strong>Payment History:</strong>
+        ${
+          !customer.payments || customer.payments.length === 0
+          ? "<p>No Payments Yet</p>"
+          : customer.payments.map(p => 
+              `<p>${new Date(p.date).toLocaleString()} - ₹${p.amount}</p>`
+            ).join("")
+        }
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function addPayment(index){
+  let amount = parseFloat(prompt("Enter payment amount:"));
+  if(!amount || amount <= 0) return;
+
+  let payment = {
+    amount: amount,
+    date: new Date().toISOString()
+  };
+
+  customers[index].payments.push(payment);
+
+  localStorage.setItem("customers", JSON.stringify(customers));
+  renderCustomers();
+}
+
+function downloadPDF(index){
+
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+
+  let c = customers[index];
+
+  let totalPaid = 0;
+  c.payments.forEach(p => totalPaid += p.amount);
+  let balance = c.totalPayable - totalPaid;
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(18);
+  doc.text("Golden Crest Finance", 20, 20);
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica","normal");
+
+  doc.text(`Customer Name: ${c.name}`, 20, 40);
+  doc.text(`Phone: ${c.phone}`, 20, 50);
+  doc.text(`Start Date: ${c.startDate}`, 20, 60);
+
+  doc.line(20,65,190,65);
+
+  doc.text(`Loan Amount: ₹${c.loanAmount}`, 20, 75);
+  doc.text(`Interest (${c.interestPercent}%): ₹${c.interestAmount}`, 20, 85);
+  doc.text(`Total Payable: ₹${c.totalPayable}`, 20, 95);
+  doc.text(`Total Paid: ₹${totalPaid}`, 20, 105);
+  doc.text(`Balance: ₹${balance}`, 20, 115);
+
+  doc.line(20,120,190,120);
+
+  doc.text("Payment History:", 20, 130);
+
+  let y = 140;
+  c.payments.forEach(p => {
+    doc.text(
+      `${new Date(p.date).toLocaleDateString()} - ₹${p.amount}`,
+      20,
+      y
+    );
+    y += 10;
+  });
+
+  doc.save(c.name + "_statement.pdf");
+}
+
+
+renderCustomers();
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+
+</body>
+</html>

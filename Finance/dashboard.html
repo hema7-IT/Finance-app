@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<meta charset="UTF-8">
+<title>Golden Crest Finance - Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* Reset & font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #1e293b, #0f172a 60%);
+  color: white;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  width: 95%;
+  max-width: 480px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: 1rem;
+}
+
+.header h2 {
+  color: #d4af37;
+  font-size: 1.5rem;
+}
+
+.nav a {
+  color: #d4af37;
+  text-decoration: none;
+  margin-left: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.5rem;
+  background: rgba(212,175,55,0.1);
+  transition: all 0.2s ease;
+}
+
+.nav a:hover {
+  background: rgba(212,175,55,0.25);
+  transform: scale(1.05);
+}
+
+/* Grid layout */
+.grid {
+  width: 95%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Card */
+.card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(1rem);
+  padding: 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 1rem 2rem rgba(0,0,0,0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.6);
+}
+
+.card h3 {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+/* Red Alert card */
+.alert {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid #ef4444;
+}
+
+.alert p {
+  color: #ff4d4d;
+}
+
+/* Mobile responsiveness */
+@media(max-width:400px){
+  .header {
+    width: 98%;
+    padding: 0.8rem 0;
+  }
+
+  .header h2 {
+    font-size: 1.3rem;
+  }
+
+  .nav a {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    width: 98%;
+  }
+
+  .card {
+    padding: 0.8rem;
+    border-radius: 0.8rem;
+  }
+
+  .card h3 {
+    font-size: 0.8rem;
+  }
+
+  .card p {
+    font-size: 1rem;
+  }
+}
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Finance Dashboard</h2>
+  <div class="nav">
+    <a href="addloan.html" class="gold-btn" style="text-decoration:none;">
+      + Add Loan
+    </a>
+    <a href="index.html" class="gold-btn" style="text-decoration:none;">
+      Back to Home
+    </a>
+  </div>
+</div>
+
+
+<div class="grid" id="stats"></div>
+
+<script>
+
+let customers = JSON.parse(localStorage.getItem("customers")) || [];
+
+let totalCustomers = customers.length;
+let totalLoanGiven = 0;
+let totalCollection = 0;
+let totalOutstanding = 0;
+let activeLoans = 0;
+let completedLoans = 0;
+let overdueLoans = 0;
+
+let todayCollection = 0;
+let todayPaymentsCount = 0;
+
+let todayDate = new Date().toDateString();
+
+customers.forEach(c=>{
+
+  if(!c.payments) c.payments = [];
+  if(!c.startDate) c.startDate = new Date().toISOString();
+
+  let totalPaid = c.payments.reduce((sum,p)=> sum + p.amount, 0);
+  let balance = c.totalPayable - totalPaid;
+
+  totalLoanGiven += c.totalPayable;
+  totalCollection += totalPaid;
+  totalOutstanding += balance;
+
+  let totalDays = c.totalDays || 0;
+  let start = new Date(c.startDate);
+  let today = new Date();
+
+  let diffTime = today - start;
+  let daysPassed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  if(daysPassed < 0) daysPassed = 0;
+
+  let daysLeft = totalDays - daysPassed;
+
+  if(balance <= 0){
+    completedLoans++;
+  } else {
+    activeLoans++;
+  }
+
+  if(daysLeft <= 0 && balance > 0){
+    overdueLoans++;
+  }
+
+  // DAILY COLLECTION CALCULATION
+  c.payments.forEach(p=>{
+    if(new Date(p.date).toDateString() === todayDate){
+      todayCollection += p.amount;
+      todayPaymentsCount++;
+    }
+  });
+
+});
+
+let overdueCardClass = overdueLoans > 0 ? "card alert" : "card";
+
+document.getElementById("stats").innerHTML = `
+
+<div class="card">
+  <h3>Total Customers</h3>
+  <p>${totalCustomers}</p>
+</div>
+
+<div class="card">
+  <h3>Total Loan Given</h3>
+  <p>₹${totalLoanGiven.toFixed(2)}</p>
+</div>
+
+<div class="card">
+  <h3>Total Collection</h3>
+  <p>₹${totalCollection.toFixed(2)}</p>
+</div>
+
+<div class="card">
+  <h3>Total Outstanding</h3>
+  <p>₹${totalOutstanding.toFixed(2)}</p>
+</div>
+
+<div class="card">
+  <h3>Active Loans</h3>
+  <p>${activeLoans}</p>
+</div>
+
+<div class="card">
+  <h3>Completed Loans</h3>
+  <p>${completedLoans}</p>
+</div>
+
+<div class="${overdueCardClass}">
+  <h3>Overdue Loans</h3>
+  <p>${overdueLoans}</p>
+</div>
+
+<div class="card">
+  <h3>Today's Collection</h3>
+  <p>₹${todayCollection.toFixed(2)}</p>
+</div>
+
+<div class="card">
+  <h3>Today's Payments Count</h3>
+  <p>${todayPaymentsCount}</p>
+</div>
+
+`;
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+
+
+</body>
+</html>
